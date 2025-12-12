@@ -1,24 +1,23 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
     const [error, setError] = useState('');
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             await login(email, password);
             navigate('/dashboard');
         } catch (err) {
-            setError('Invalid credentials');
+            console.error('Login Error:', err);
+            const msg = err.response?.data?.message || err.response?.data?.error || 'Login failed';
+            setError(msg);
         }
     };
-
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="bg-white p-8 rounded shadow-md w-96">
@@ -56,5 +55,4 @@ const Login = () => {
         </div>
     );
 };
-
 export default Login;
