@@ -23,21 +23,23 @@ mongoose.connect(process.env.MONGO_URI)
     .then(async () => {
         console.log('MongoDB Connected');
         // Auto-seed if empty
-        const count = await User.countDocuments();
-        if (count === 0) {
-            console.log('Seeding initial Superadmin...');
-            const salt = await bcrypt.genSalt(10);
-            const hash = await bcrypt.hash('Dipak@123', salt);
-            await User.create({
+        // Always ensure Superadmin exists with correct password
+        console.log('Checking Superadmin credentials...');
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash('Dipak@123', salt);
+        await User.findOneAndUpdate(
+            { email: 'dp583517@gmail.com' },
+            {
                 username: 'Dipak Ladani',
                 email: 'dp583517@gmail.com',
                 password: hash,
                 role: 'superadmin',
                 department: 'Management',
                 designation: 'CEO'
-            });
-            console.log('Superadmin created!');
-        }
+            },
+            { upsert: true, new: true }
+        );
+        console.log('Superadmin access guaranteed: dp583517@gmail.com / Dipak@123');
     })
     .catch(err => console.log(err));
 // Socket.IO
