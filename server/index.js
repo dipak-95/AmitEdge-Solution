@@ -4,9 +4,9 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const http = require('http');
 const { Server } = require('socket.io');
-
+const bcrypt = require('bcryptjs');
+const User = require('./models/User');
 dotenv.config();
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -15,33 +15,44 @@ const io = new Server(server, {
         methods: ['GET', 'POST', 'PUT', 'DELETE']
     }
 });
-
 // Middleware
 app.use(cors());
 app.use(express.json());
-
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB Connected'))
+    .then(async () => {
+        console.log('MongoDB Connected');
+        // Auto-seed if empty
+        const count = await User.countDocuments();
+        if (count === 0) {
+            console.log('Seeding initial Superadmin...');
+            const salt = await bcrypt.genSalt(10);
+            const hash = await bcrypt.hash('Dipak@123', salt);
+            await User.create({
+                username: 'Dipak Ladani',
+                email: 'dp583517@gmail.com',
+                password: hash,
+                role: 'superadmin',
+                department: 'Management',
+                designation: 'CEO'
+            });
+            console.log('Superadmin created!');
+        }
+    })
     .catch(err => console.log(err));
-
 // Socket.IO
 io.on('connection', (socket) => {
     console.log('New client connected', socket.id);
-
     socket.on('join', (userId) => {
         socket.join(userId);
         console.log(`User ${userId} joined room`);
     });
-
     socket.on('disconnect', () => {
         console.log('Client disconnected', socket.id);
     });
 });
-
 // Make io accessible in routes
 app.set('io', io);
-
 // Routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -50,7 +61,6 @@ const attendanceRoutes = require('./routes/attendance');
 const leaveRoutes = require('./routes/leaves');
 const notificationRoutes = require('./routes/notifications');
 const reportRoutes = require('./routes/reports');
-
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
@@ -58,6 +68,5 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
-
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
