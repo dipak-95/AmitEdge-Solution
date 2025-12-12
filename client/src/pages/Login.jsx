@@ -14,7 +14,8 @@ const Login = () => {
             navigate('/dashboard');
         } catch (err) {
             console.error('Login Error:', err);
-            const msg = err.response?.data?.message || err.response?.data?.error || 'Login failed';
+            const data = err.response?.data || {};
+            const msg = (data.message || '') + (data.error ? ' - ' + data.error : '') || 'Login failed';
             setError(msg);
         }
     };
